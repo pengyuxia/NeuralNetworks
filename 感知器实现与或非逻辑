@@ -1,0 +1,65 @@
+#encoding='utf-8'
+
+from functools import reduce
+
+class Perceptron():
+    def __init__(self, input_num, activator):
+        #weight_num是输入参数的个数
+
+        #初始化权重向量和偏移项为0
+
+        self.activator = activator #激活函数
+        self.weight_vec = [0.0 for _ in range(input_num)]
+        self.bias = 0.0
+
+    # 计算出的y值
+    def Output(self, input_vec):
+        y = reduce(lambda x, y: x + y,
+                   map(lambda x, y: x * y,
+                       input_vec, self.weight_vec), 0.0) + self.bias
+        return self.activator(y)
+
+    # 更新权重
+    def _update_weight(self, input_vec, output, label, rate):
+        # input_vec = [x1,x2, ..., xn]
+        # weight_vec = [w1, w2, ..., wn]
+        # lable is the actual value, and y is the calculated value
+        delt = label - output
+        self.weight_vec = list(map(lambda w, x: w + rate * delt * x,
+                                   self.weight_vec, input_vec))
+        self.bias += rate * delt
+
+    #进行一轮训练, 把所有训练数据过一遍
+    def _one_iteration(self, input_vecs, labels, rate):
+        for index in range(len(input_vecs)):
+            output = self.Output(input_vecs[index]) #获得计算结果
+            self._update_weight(input_vecs[index], output, labels[index], rate) #更新权重和bais
+            print("one iteration: ",self.weight_vec, '\t', self.bias)
+
+
+    #训练权重和阈值bias
+    def train(self, input_vecs, labels, rate, iteration):
+        for i in range(iteration):
+            self._one_iteration(input_vecs, labels, rate)
+            print("####")
+
+
+#激活函数
+def active(x):
+    return 1 if x > 0 else 0
+
+if __name__ == '__main__':
+    obj = Perceptron(2, active) #参数为2，激活函数是active
+    print(obj.weight_vec, obj.activator, obj.bias)
+
+    input_vecs = [[0, 0],
+                  [1, 1],
+                  [0, 1],
+                  [1, 0]]
+
+    labels = [0, 1, 0, 0]
+
+    obj.train(input_vecs, labels, 0.1, 20)
+
+    print(obj.weight_vec, obj.bias)
+
