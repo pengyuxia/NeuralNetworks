@@ -1,0 +1,116 @@
+#encoding='utf-8'
+
+import numpy as np
+
+
+#实现卷积层
+class ConvLayer(object):
+    def __init__(self, input_width, input_height, channel_number,
+                 filter_width, filter_height, filter_number,
+                 zero_padding, stride, activator, learning_rate):
+        """
+        :param input_width: 输入图像的宽度
+        :param input_height: 输入图像的高度
+        :param channel_number: 通道数量，即提取多少组特征
+        :param filter_width: filter的宽度
+        :param filter_height: filter高度
+        :param filter_number: 卷积层数(一层卷积，两层卷积。。。。)
+        :param zero_padding: 周围补0
+        :param stride: 步长
+        :param activator: 激活函数
+        :param learning_rate: 学习速率
+        """
+        self.input_width = input_width
+        self.input_height = input_height
+        self.channel_number = channel_number
+        self.filter_width = filter_width
+        self.filter_height = filter_height
+        self.filter_number = filter_number
+        self.zero_padding = zero_padding
+        self.stride = stride
+
+        #输出feature map的宽度
+        self.output_width = ConvLayer.calculate_output_size(input_width, filter_width,
+                                                            zero_padding, stride)
+
+        #输出feature map的高度
+        self.output_height = ConvLayer.calculate_output_size(input_height, filter_height,
+                                                             zero_padding, stride)
+
+        #feature map输出矩阵，深度为filter_number, 宽度为output_width，高度为output_height
+        self.output_array = np.zeros((filter_number, self.output_width, self.output_height))
+
+        self.filters = []
+        for i in range(filter_number):
+            self.filters.append(Filter(filter_width, filter_height, channel_number))
+
+        self.activator = activator
+        self.learning_rate = learning_rate
+
+    @staticmethod
+    #计算输出filter map的size
+    def calculate_output_size(input_size, filter_size, zero_padding, stride):
+        return (input_size - filter_size + 2*zero_padding)/stride + 1
+
+
+    def padding(self, input_array, zp):
+        """
+        为输出矩阵补0
+        :param input_array:
+        :param zp: zp代表补零圈数
+        :return:
+        """
+
+        if zp == 0:
+            return input_array
+        else:
+            
+
+    #卷积层向前计算结果
+    def forward(self, input_array):
+        self.input_array = input_array
+
+
+
+#卷积类，Filter保存卷积层的参数及梯度，并用梯度下降法实现参数更新
+class Filter(object):
+    def __init__(self, width, height, depth):
+        #初始化filters的权重,depth代表一层卷积的filter个数，即depth是特征组数
+        self.weights = np.random.uniform(-1e-4, 1e-4, (depth, width, height))
+        self.bias = 0
+
+        #初始化filters梯度为0
+        self.weights_grad = np.zeros(self.weights.shape)
+
+        self.bias_grad = 0
+
+
+    #以字符串形式返回对象的可读形式
+    def __repr__(self):
+        return 'filter weights:\n%s\nbias:\n%s' %(repr(self.weights), repr(self.bias))
+
+    def get_weights(self):
+        return self.weights
+
+    def get_bias(self):
+        return self.bias
+
+    def update(self, learning_rate):
+        self.weights -= learning_rate*self.weights_grad
+        self.bias -= learning_rate*self.bias_grad
+
+#激活函数类，向前计算输出，向后求导
+class RuleActivator(object):
+    def forward(self, weighted_input):
+        return max(0, weighted_input)
+
+    def backward(self, output): #如果weighted_input > 0, 则此处output == weighted_input
+        return 1 if output > 0 else 0
+
+
+
+
+a = np.random.uniform(1,2,(2,3,5))
+b = np.zeros(a.shape)
+print(a)
+print(b)
