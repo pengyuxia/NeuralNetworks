@@ -1,0 +1,75 @@
+from tensorflow.examples.tutorials.mnist import input_data
+import tensorflow as tf
+
+#读取mnist数据
+mnist = input_data.read_data_sets('MNIST_data/MNIST', one_hot=True)
+
+#生成权重（filter矩阵）
+def create_weight(shape):
+    weight = tf.truncated_normal(shape, stddev=0.1)
+    return tf.Variable(weight)
+
+#生成bias
+def create_bias(shape):
+    bias = tf.constant(0.1, shape=shape)
+    return tf.Variable(bias)
+
+#卷积计算
+def conv2(input, filter):
+    return tf.nn.conv2d(input, filter, strides=[1,1,1,1], padding='SAME')
+
+#池化
+def maxpool(feature):
+    return tf.nn.max_pool(feature, ksize=[1,2,2,1], strides=[1,2,2,1], padding='SAME')
+
+#定义输入
+xs = tf.placeholder(tf.float32, [None, 28*28])
+ys = tf.placeholder(tf.float32, [None, 10])
+
+#将图片转成四维 【batch, height, weight, channels]
+x_image = tf.reshape(xs, [-1, 28, 28, 1])
+
+#第一层卷积， 32个5*5的卷积核
+filter1 = create_weight([5,5,1,32])
+bias1 = create_bias([32])
+con1 = tf.nn.relu(conv2(x_image, filter1) + bias1)
+pool1 = maxpool(con1)
+
+#第二层卷积， 64个5*5的卷积核
+filter2 = create_weight([5,5,32,64])
+bias2 = create_bias([64])
+con2 = tf.nn.relu(conv2(pool1, filter2) + bias2)
+pool2 = maxpool(con2)
+
+#全连接层，输入为7*7*64个神经元，隐含层1024个神经元
+weight1 = create_weight([7*7*64, 1024])
+full_bias1 = create_bias([1024])
+input1 = tf.reshape(pool2, [-1, 7*7*64])
+output1 = tf.nn.relu(tf.matmul(input1, weight1) + full_bias1)
+
+#全连接输出层
+weight2 = create_weight([1024, 10])
+full_bias2 = create_bias([10])
+output2 = tf.nn.relu(tf.matmul(output1, weight2) + full_bias2)
+
+#定义损失函数
+loss = tf.reduce_sum(-ys * tf.log(output2))
+one_train = tf.train.GradientDescentOptimizer(0.001).minimize(loss)
+
+#测试
+correct_prediction = tf.equal(tf.argmax(output2, 1), tf.argmax(ys, 1))
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+#训练数据
+with tf.Session() as session:
+    tf.global_variables_initializer().run()
+    for i in range(2000):
+        batch = mnist.train.next_batch(50)
+        if i % 100 == 0:
+            train_accuracy = accuracy.eval(feed_dict={xs: batch[0], ys: batch[1]})
+            print("step %d, training accuracy %g" % (i, train_accuracy))
+
+        session.run(one_train, feed_dict={xs: batch[0], ys: batch[1]})
+
+    print("test accuracy is ", session.run(one_train, feed_dict={xs:mnist.test.images, ys:mnist.test.labels}))
+
+
